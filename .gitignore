@@ -1,0 +1,109 @@
+# ===================================================================
+# GITIGNORE FOR OPERATIONS REPOSITORY (IaC WITH DOCKER)
+# ===================================================================
+
+# -------------------------------------------------------------------
+# Environment, Secrets, and Credentials (CRITICAL SECTION)
+# -------------------------------------------------------------------
+# Ignore local environment files. The correct practice is to commit
+# an '.env.example' or 'template.env' file with the required
+# variables, but without their sensitive values.
+.env
+.env.*
+!.env.example
+!.env.template
+
+# Ignore other common secret files
+secrets.yml
+secrets.json
+*.secrets
+
+# Ignore private keys, certificates, etc.
+*.key
+*.pem
+*.token
+*.cer
+*.p12
+*.pfx
+
+# Cloud Provider Credentials
+.aws/
+.azure/
+*gcloud.json
+
+# -------------------------------------------------------------------
+# Docker
+# -------------------------------------------------------------------
+# Ignore local override files. They are used to configure the local
+# development environment without affecting the rest of the team.
+docker-compose.override.yml
+docker-compose.local.yml
+
+# Local Docker configuration files
+.docker/
+
+# -------------------------------------------------------------------
+# Infrastructure as Code (Terraform, etc.)
+# -------------------------------------------------------------------
+# Terraform state files (contain sensitive information)
+*.tfstate
+*.tfstate.backup
+
+# Local Terraform variable files (should not be committed)
+*.tfvars
+*.tfvars.json
+!.tfvars.example
+
+# Terraform plan files (may contain sensitive data)
+*.tfplan
+
+# Terraform directories and logs
+.terraform/
+.terraform.lock.hcl
+crash.log
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+*.tfsummary
+
+# -------------------------------------------------------------------
+# Code Editors and IDEs
+# -------------------------------------------------------------------
+.idea/
+*.iml
+.vscode/
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+*.sublime-project
+*.sublime-workspace
+
+# -------------------------------------------------------------------
+# Operating System and General Files
+# -------------------------------------------------------------------
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
+$RECYCLE.BIN/
+
+# Linux / VIM
+*~
+*.swp
+*.swo
+
+# -------------------------------------------------------------------
+# Logs and Temporary Files
+# -------------------------------------------------------------------
+*.log
+logs/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
