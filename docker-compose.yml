@@ -1,0 +1,142 @@
+version: '3.8'
+
+services:
+  # --- Servicio de Base de Datos PostgreSQL ---
+  postgres:
+    image: postgres:16
+    container_name: arandano-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./postgres/postgresql.conf:/usr/share/postgresql/16/postgresql.conf
+      - ./postgres/CrateDb-Script.sql:/docker-entrypoint-initdb.d/01-init-schema.sql
+    command: postgres -c config_file=/usr/share/postgresql/16/postgresql.conf
+    ports:
+      - "127.0.0.1:5432:5432"
+    networks:
+      - arandano-net
+
+  # --- Servicio de la Aplicación .NET ---
+  arandano-app:
+    container_name: arandano-app
+    restart: unless-stopped
+    build:
+      context: ../ArandanoIRTSoftware
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:8080
+      - ConnectionStrings__PostgresConnection=${CONNECTION_STRING}
+      - Minio__Endpoint=${MINIO_APP_ENDPOINT}
+      - Minio__AccessKey=${MINIO_APP_ACCESS_KEY}
+      - Minio__SecretKey=${MINIO_APP_SECRET_KEY}
+      - WeatherApi__ApiKey=${WEATHER_API_KEY}
+      - WeatherApi__BaseUrl=${WEATHER_API_URL}
+      - AdminCredentials__Username=${ADMIN_USERNAME}
+      - AdminCredentials__PasswordHash=${ADMIN_PASSWORD}
+    depends_on:
+      - postgres
+    networks:
+      - arandano-net
+
+  # --- Servicio de Almacenamiento S3 ---
+  minio:
+    image: minio/minio:latest
+    container_name: arandano-minio
+    restart: unless-stopped
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: server /data --console-address ":9001"
+    volumes:
+      - minio_data:/data
+    ports:
+      # Puerto de la API de S3
+      - "127.0.0.1:9000:9000"
+      # Puerto de la Consola Web de MinIO
+      - "127.0.0.1:9001:9001"
+    networks:
+      - arandano-net
+
+  # --- Pila de Logging: Loki (Base de Datos) ---
+  loki:
+    image: grafana/loki:2.9.2
+    container_name: arandano-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/local-config.yaml
+    volumes:
+      - ./loki/loki-config.yml:/etc/loki/local-config.yaml
+      - loki_data:/loki
+    ports:
+      - "127.0.0.1:3100:3100"
+    networks:
+      - arandano-net
+
+  # --- Pila de Logging: Promtail (Agente Colector) ---
+  promtail:
+    image: grafana/promtail:2.9.2
+    container_name: arandano-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/config.yml
+    volumes:
+      # Montamos el archivo de configuración
+      - ./promtail/promtail-config.yml:/etc/promtail/config.yml
+      # Montamos el socket de Docker para que Promtail pueda descubrir otros contenedores
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - arandano-net
+
+  # --- Pila de Logging: Grafana (Visualizador) ---
+  grafana:
+    image: grafana/grafana:latest
+    container_name: arandano-grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+    volumes:
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "127.0.0.1:3000:3000"
+    networks:
+      - arandano-net
+    depends_on:
+      - loki
+  
+  caddy:
+    image: caddy:latest
+    container_name: arandano-caddy
+    restart: unless-stopped
+    ports:
+      # Puerto estándar para tráfico HTTP
+      - "80:80"
+      # Puerto estándar para tráfico HTTPS
+      - "443:443"
+    volumes:
+      # Montamos nuestro archivo de configuración
+      - ./caddy/Caddyfile:/etc/caddy/Caddyfile
+      # Volumen nombrado para que Caddy guarde los certificados SSL y otros datos
+      - caddy_data:/data
+    networks:
+      - arandano-net
+    depends_on:
+      # Caddy depende de los servicios a los que va a redirigir el tráfico
+      - arandano-app
+      - grafana
+      - minio
+
+# Definimos la red personalizada para que todos los servicios se comuniquen
+networks:
+  arandano-net:
+    driver: bridge
+
+# Definimos todos los volúmenes nombrados para la persistencia de datos
+volumes:
+  postgres_data:
+  minio_data:
+  loki_data:
+  grafana_data:
+  caddy_data:
