@@ -1,7 +1,7 @@
 -- =============================================================================
 -- Project:      Arandano IRT - Water Stress Monitoring System
 -- Author:       G. Martinez (with assistance from Gemini AI)
--- Version:      3.0.1
+-- Version:      3.4
 -- Date:         2025-06-18
 --
 -- Description:
@@ -99,10 +99,12 @@ COMMENT ON TABLE public.device_activations IS 'Stores single-use codes to activa
 CREATE TABLE public.device_tokens (
     id SERIAL PRIMARY KEY,
     device_id INT NOT NULL REFERENCES public.devices(id) ON DELETE CASCADE,
-    token TEXT NOT NULL UNIQUE,
+    access_token TEXT NOT NULL UNIQUE,
+    refresh_token TEXT NOT NULL UNIQUE,
     status token_status NOT NULL DEFAULT 'ACTIVE',
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-    expires_at TIMESTAMPTZ NOT NULL,
+    access_token_expires_at TIMESTAMPTZ NOT NULL,
+    refresh_token_expires_at TIMESTAMPTZ NOT NULL,
     revoked_at TIMESTAMPTZ
 );
 COMMENT ON TABLE public.device_tokens IS 'Stores authentication tokens (JWTs) for devices.';
@@ -125,7 +127,8 @@ CREATE TABLE public.environmental_readings (
     city_weather_condition TEXT,
     -- JSONB field for future flexibility
     extra_data JSONB,
-    recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    recorded_at_server TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    recorded_at_device TIMESTAMPTZ DEFAULT NOW()
 );
 COMMENT ON TABLE public.environmental_readings IS 'Stores environmental data collected by device sensors.';
 
@@ -135,7 +138,8 @@ CREATE TABLE public.thermal_captures (
     plant_id INT REFERENCES public.plants(id) ON DELETE SET NULL,
     thermal_data_stats JSONB NOT NULL,
     rgb_image_path TEXT,
-    recorded_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    recorded_at_server TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    recorded_at_device TIMESTAMPTZ DEFAULT NOW()
 );
 COMMENT ON TABLE public.thermal_captures IS 'Stores thermographic captures. Statistics are stored in JSONB, the image path in Object Storage.';
 
@@ -151,14 +155,29 @@ COMMENT ON TABLE public.observations IS 'Stores manual observations made by an a
 
 
 -- =============================================================================
--- 5. INDEXES
+-- 5 INVITATION CODES
+-- =============================================================================
+CREATE TABLE public.invitation_codes (
+    id SERIAL PRIMARY KEY,
+    code VARCHAR(255) UNIQUE NOT NULL,
+    expires_at TIMESTAMPTZ NOT NULL,
+    is_used BOOLEAN NOT NULL DEFAULT FALSE,
+    created_by_user_id INT REFERENCES public.users(id),
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+COMMENT ON TABLE public.invitation_codes IS 'Stores single-use invitation codes for user registration.';
+
+-- =============================================================================
+-- 6. INDEXES
 -- =============================================================================
 CREATE INDEX idx_users_crop_id ON public.users(crop_id);
 CREATE INDEX idx_plants_crop_id ON public.plants(crop_id);
 CREATE INDEX idx_devices_plant_id ON public.devices(plant_id);
 CREATE INDEX idx_devices_mac_address ON public.devices(mac_address);
-CREATE INDEX idx_readings_device_id_recorded_at ON public.environmental_readings(device_id, recorded_at DESC);
-CREATE INDEX idx_readings_plant_id_recorded_at ON public.environmental_readings(plant_id, recorded_at DESC);
-CREATE INDEX idx_captures_device_id_recorded_at ON public.thermal_captures(device_id, recorded_at DESC);
-CREATE INDEX idx_captures_plant_id_recorded_at ON public.thermal_captures(plant_id, recorded_at DESC);
+CREATE INDEX idx_readings_device_id_recorded_at_server ON public.environmental_readings(device_id, recorded_at_server DESC);
+CREATE INDEX idx_readings_plant_id_recorded_at_server ON public.environmental_readings(plant_id, recorded_at_server DESC);
+CREATE INDEX idx_captures_device_id_recorded_at_server ON public.thermal_captures(device_id, recorded_at_server DESC);
+CREATE INDEX idx_captures_plant_id_recorded_at_server ON public.thermal_captures(plant_id, recorded_at_server DESC);
 CREATE INDEX idx_observations_plant_id ON public.observations(plant_id);
+CREATE INDEX idx_observations_user_id ON public.observations(user_id);
+CREATE INDEX idx_invitation_codes_created_by_user_id ON public.invitation_codes(created_by_user_id);
