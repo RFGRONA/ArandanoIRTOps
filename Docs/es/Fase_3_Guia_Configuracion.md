@@ -103,7 +103,7 @@ crontab -e
 ```
 Se añadió la siguiente línea al archivo:
 ```crontab
-0 3 * * * /home/gabe/ArandanoProject/ArandanoIRTOps/backup_postgres.sh >> /home/gabe/ArandanoProject/ArandanoIRTOps/backup.log 2>&1
+0 3 * * * /home/<usuario>/ArandanoProject/ArandanoIRTOps/backup_postgres.sh >> /home/<usuario>/ArandanoProject/ArandanoIRTOps/backup.log 2>&1
 ```
 
 ## 5. Conclusión
