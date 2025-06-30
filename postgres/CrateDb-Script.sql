@@ -1,8 +1,8 @@
 -- =============================================================================
 -- Project:      Arandano IRT - Water Stress Monitoring System
 -- Author:       G. Martinez (with assistance from Gemini AI)
--- Version:      3.4
--- Date:         2025-06-18
+-- Version:      3.5
+-- Date:         2025-06-28
 --
 -- Description:
 -- This script creates the initial database schema for the Arandano IRT project.
@@ -47,6 +47,7 @@ CREATE TABLE public.users (
     email VARCHAR(75) NOT NULL UNIQUE,
     password_hash TEXT NOT NULL,
     is_admin BOOLEAN DEFAULT FALSE NOT NULL,
+    account_settings JSONB NOT NULL DEFAULT '{}'::jsonb,
     crop_id INT REFERENCES public.crops(id) ON DELETE SET NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
