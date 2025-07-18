@@ -200,7 +200,6 @@ CREATE TABLE public.environmental_readings (
     -- Typed (Core) Columns
     temperature REAL NOT NULL,
     humidity REAL NOT NULL,
-    light REAL NOT NULL,
     -- External Data Columns
     city_temperature REAL,
     city_humidity REAL,
