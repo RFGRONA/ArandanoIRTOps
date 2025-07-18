@@ -1,8 +1,9 @@
 -- =============================================================================
 -- Project:      Arandano IRT - Water Stress Monitoring System
 -- Author:       G. Martinez (with assistance from Gemini AI)
--- Version:      5.1
--- Date:         2025-07-15
+-- Editor:       Juan Fuentes
+-- Version:      5.2
+-- Date:         2025-07-18
 --
 -- Description:
 -- This script creates the initial database schema for the Arandano IRT project.
@@ -199,6 +200,7 @@ CREATE TABLE public.environmental_readings (
     -- Typed (Core) Columns
     temperature REAL NOT NULL,
     humidity REAL NOT NULL,
+    light REAL NOT NULL,
     -- External Data Columns
     city_temperature REAL,
     city_humidity REAL,
