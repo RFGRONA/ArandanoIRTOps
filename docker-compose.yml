@@ -1,9 +1,7 @@
-version: '3.8'
-
 services:
   # --- Servicio de Base de Datos PostgreSQL ---
   postgres:
-    image: postgres:16
+    build: ./postgres
     container_name: arandano-postgres
     restart: unless-stopped
     environment:
@@ -19,13 +17,19 @@ services:
       - "127.0.0.1:5432:5432"
     networks:
       - arandano-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+
 
   # --- Servicio de la Aplicación .NET ---
   arandano-app:
+    image: ghcr.io/rfgrona/arandanoirtsoftware:latest
     container_name: arandano-app
     restart: unless-stopped
-    build:
-      context: ../ArandanoIRTSoftware
     environment:
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
@@ -38,7 +42,8 @@ services:
       - AdminCredentials__Username=${ADMIN_USERNAME}
       - AdminCredentials__PasswordHash=${ADMIN_PASSWORD}
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     networks:
       - arandano-net
 
@@ -105,25 +110,21 @@ services:
       - arandano-net
     depends_on:
       - loki
-  
+
+  # --- Servicio de Proxy Inverso: Caddy ---
   caddy:
     image: caddy:latest
     container_name: arandano-caddy
     restart: unless-stopped
     ports:
-      # Puerto estándar para tráfico HTTP
       - "80:80"
-      # Puerto estándar para tráfico HTTPS
       - "443:443"
     volumes:
-      # Montamos nuestro archivo de configuración
       - ./caddy/Caddyfile:/etc/caddy/Caddyfile
-      # Volumen nombrado para que Caddy guarde los certificados SSL y otros datos
       - caddy_data:/data
     networks:
       - arandano-net
     depends_on:
-      # Caddy depende de los servicios a los que va a redirigir el tráfico
       - arandano-app
       - grafana
       - minio

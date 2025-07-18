@@ -1,0 +1,16 @@
+# Contenido de caddy/Caddyfile
+{
+    email tu-email-real@ejemplo.com
+}
+
+arandanoirt.co {
+    reverse_proxy arandano-app:8080
+}
+
+grafana.arandanoirt.co {
+    reverse_proxy grafana:3000
+}
+
+minio.arandanoirt.co {
+    reverse_proxy minio:9001
+}
