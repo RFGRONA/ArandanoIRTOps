@@ -1,8 +1,8 @@
 -- =============================================================================
 -- Project:      Arandano IRT - Water Stress Monitoring System
 -- Author:       G. Martinez (with assistance from Gemini AI)
--- Version:      5.2
--- Date:         2025-07-23
+-- Version:      5.3
+-- Date:         2025-07-24
 --
 -- Description:
 -- This script creates the initial database schema for the Arandano IRT project.
@@ -24,7 +24,7 @@
 CREATE TYPE device_status AS ENUM ('PENDING_ACTIVATION', 'ACTIVE', 'INACTIVE', 'MAINTENANCE');
 CREATE TYPE activation_status AS ENUM ('PENDING', 'COMPLETED', 'EXPIRED');
 CREATE TYPE token_status AS ENUM ('ACTIVE', 'REVOKED');
-CREATE TYPE plant_status AS ENUM ('OPTIMAL', 'MILD_STRESS', 'MODERATE_STRESS', 'SEVERE_STRESS', 'RECOVERING', 'UNKNOWN');
+CREATE TYPE plant_status AS ENUM ('OPTIMAL', 'MILD_STRESS', 'SEVERE_STRESS', 'RECOVERING', 'UNKNOWN');
 CREATE TYPE experimental_group_type AS ENUM ('CONTROL', 'STRESS', 'MONITORED');
 
 
