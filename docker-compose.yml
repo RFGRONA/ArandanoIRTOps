@@ -31,16 +31,39 @@ services:
     container_name: arandano-app
     restart: unless-stopped
     environment:
+      # ASP.NET Core Configuration
       - ASPNETCORE_ENVIRONMENT=Production
       - ASPNETCORE_URLS=http://+:8080
+      
+      # Base URL
+      - BaseUrl=${BASE_URL}
+      
+      # Database Connection
       - ConnectionStrings__PostgresConnection=${CONNECTION_STRING}
+      
+      # MinIO Configuration
       - Minio__Endpoint=${MINIO_APP_ENDPOINT}
       - Minio__AccessKey=${MINIO_APP_ACCESS_KEY}
       - Minio__SecretKey=${MINIO_APP_SECRET_KEY}
+      - Minio__UseSsl=false
+      
+      # Weather API
       - WeatherApi__ApiKey=${WEATHER_API_KEY}
       - WeatherApi__BaseUrl=${WEATHER_API_URL}
+      
+      # Admin Credentials
       - AdminCredentials__Username=${ADMIN_USERNAME}
-      - AdminCredentials__PasswordHash=${ADMIN_PASSWORD}
+      - AdminCredentials__PasswordHash=${ADMIN_PASSWORD_HASH}
+      
+      # Email Service (Brevo)
+      - BrevoSettings__ApiKey=${BREVO_API_KEY}
+      
+      # Alerting & Monitoring
+      - Alerting__GrafanaApiKey=${GRAFANA_API_KEY}
+      
+      # Cloudflare Turnstile (Captcha)
+      - TurnstileSettings__SiteKey=${TURNSTILE_SITE_KEY}
+      - TurnstileSettings__SecretKey=${TURNSTILE_SECRET_KEY}
     depends_on:
       postgres:
         condition: service_healthy
