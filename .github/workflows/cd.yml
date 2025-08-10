@@ -28,14 +28,20 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           fingerprint: ${{ secrets.SSH_FINGERPRINT }}
           script: |
-            set -e 
-            
-            echo "--- Sincronizando repositorio en el servidor ---"
+            set -e
+
+            echo "--- Synchronizing repository on the server ---"
             cd /home/${{ secrets.SSH_USERNAME }}/ArandanoProject/ArandanoIRTOps
+
+            echo "--- Cleaning local repository to avoid merge conflicts ---"
+            git fetch --all
+            git reset --hard origin/main
+            git clean -fd
+            echo "--- Pulling latest changes from remote repository ---"
             git pull origin main
-            
-            echo "--- Aplicando configuración de Docker Compose ---"
-            # Aplica los cambios y elimina contenedores "huérfanos" (que ya no estén en el yml)
+
+            echo "--- Applying Docker Compose configuration ---"
+            # Apply changes and remove orphan containers
             docker compose up -d --remove-orphans
-            
-            echo "--- Sincronización completada exitosamente ---"
+
+            echo "--- Synchronization completed successfully ---"
