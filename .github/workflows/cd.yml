@@ -1,0 +1,41 @@
+name: CD - Sync Server Configuration
+
+on:
+  push:
+    branches:
+      - 'main'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sync-server:
+    name: Sync Server with Main Branch
+    runs-on: ubuntu-latest
+    
+    environment:
+      name: production
+      url: https://arandanoirt.co
+
+    steps:
+      - name: Wait for approval and apply changes
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USERNAME }}
+          key: ${{ secrets.SSH_PRIVATE_KEY }}
+          fingerprint: ${{ secrets.SSH_FINGERPRINT }}
+          script: |
+            set -e 
+            
+            echo "--- Sincronizando repositorio en el servidor ---"
+            cd /home/${{ secrets.SSH_USERNAME }}/ArandanoProject/ArandanoIRTOps
+            git pull origin main
+            
+            echo "--- Aplicando configuración de Docker Compose ---"
+            # Aplica los cambios y elimina contenedores "huérfanos" (que ya no estén en el yml)
+            docker compose up -d --remove-orphans
+            
+            echo "--- Sincronización completada exitosamente ---"

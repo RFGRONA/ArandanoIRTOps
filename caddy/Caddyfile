@@ -1,0 +1,17 @@
+# Contenido de caddy/Caddyfile
+{
+    # Set the CADDY_EMAIL environment variable to a valid email address before deployment.
+    email {$CADDY_EMAIL}
+}
+
+arandanoirt.co {
+    reverse_proxy arandano-app:8080
+}
+
+grafana.arandanoirt.co {
+    reverse_proxy grafana:3000
+}
+
+minio.arandanoirt.co {
+    reverse_proxy minio:9001
+}
