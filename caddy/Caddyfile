@@ -1,6 +1,7 @@
 # Contenido de caddy/Caddyfile
 {
-    email tu-email-real@ejemplo.com
+    # Set the CADDY_EMAIL environment variable to a valid email address before deployment.
+    email {$CADDY_EMAIL}
 }
 
 arandanoirt.co {

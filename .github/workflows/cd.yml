@@ -36,6 +36,6 @@ jobs:
             
             echo "--- Aplicando configuración de Docker Compose ---"
             # Aplica los cambios y elimina contenedores "huérfanos" (que ya no estén en el yml)
-            docker-compose up -d --remove-orphans
+            docker compose up -d --remove-orphans
             
             echo "--- Sincronización completada exitosamente ---"
