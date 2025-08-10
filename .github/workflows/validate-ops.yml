@@ -35,9 +35,12 @@ jobs:
     name: Lint Dockerfiles
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-      - name: Run Hadolint
-        uses: hadolint/hadolint-action@v3.1.0
-        with:
-          dockerfile: '**/Dockerfile'
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Install Hadolint
+      run: |
+        wget -O /usr/local/bin/hadolint https://github.com/hadolint/hadolint/releases/latest/download/hadolint-Linux-x86_64
+        chmod +x /usr/local/bin/hadolint
+    - name: Run Hadolint on all Dockerfiles
+      run: |
+        find . -name "Dockerfile" -print0 | xargs -0 -n1 hadolint
