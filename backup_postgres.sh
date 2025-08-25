@@ -1,81 +1,72 @@
 #!/bin/bash
-set -euo pipefail
 
 # ==============================================================================
-# BACKUP SCRIPT FOR POSTGRESQL AND MINIO
-# Description: This script performs a dump of a PostgreSQL database running in
-#              a Docker container, compresses it, uploads it to a MinIO bucket,
-#              and stores a persistent log of the operation.
-#              Logs older than 90 days are automatically deleted.
-# Repository Version: 1.4
+# SCRIPT DE BACKUP PARA POSTGRESQL Y MINIO
+# Descripción: Este script realiza un volcado de una base de datos PostgreSQL
+#              que corre en un contenedor Docker, lo comprime y lo sube a un
+#              bucket de MinIO.
+# Versión de Repositorio: 1.1
 # ==============================================================================
 
-# --- CONFIGURATION ---
+# --- CONFIGURACIÓN ---
+# El script usa variables de entorno para ser flexible. Si no se definen,
+# usará los valores por defecto que se muestran a continuación.
+# Ejemplo de uso: export DB_NAME="otra_db" && ./backup_postgres.sh
+
 DB_USER="${DB_USER:-arandano_user}"
 DB_NAME="${DB_NAME:-arandano_db}"
 DB_CONTAINER="${DB_CONTAINER:-arandano-postgres}"
 
-# MinIO configuration
+# Configuración de MinIO
 MINIO_ALIAS="${MINIO_ALIAS:-localminio}"
 MINIO_BUCKET="${MINIO_BUCKET:-backups}"
 
-# Temporary directory for storing backups before upload
+# Directorio temporal para guardar el backup antes de subirlo
 BACKUP_DIR="${BACKUP_DIR:-/tmp}"
 
-# Directory for persistent logs
-LOG_DIR="${LOG_DIR:-/var/log/db_backups}"
-mkdir -p "${LOG_DIR}"
+# --- LÓGICA DEL SCRIPT (No modificar debajo de esta línea) ---
 
-# Number of days to keep logs
-LOG_RETENTION_DAYS=90
-
-# --- SCRIPT LOGIC (Do not modify below this line) ---
-
-# Create timestamped filenames
+# 1. Crear un nombre de archivo con la fecha y hora actual
 TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
-BACKUP_FILE="backup-${TIMESTAMP}.sql.gz"
-LOG_FILE="backup-${TIMESTAMP}.log"
-BACKUP_PATH="${BACKUP_DIR}/${BACKUP_FILE}"
-LOG_PATH="${LOG_DIR}/${LOG_FILE}"
-
-# Redirect all output to both console and log file
-exec > >(tee -a "${LOG_PATH}") 2>&1
+FILENAME="backup-${TIMESTAMP}.sql.gz"
+FULL_PATH="${BACKUP_DIR}/${FILENAME}"
 
 echo "----------------------------------------"
-echo "Starting backup of the database: ${DB_NAME}"
-echo "Timestamp: ${TIMESTAMP}"
+echo "Iniciando backup de la base de datos: ${DB_NAME}"
 echo "----------------------------------------"
-echo "INFO: Backup file will be: ${BACKUP_FILE}"
-echo "INFO: Log file stored at: ${LOG_PATH}"
+echo "INFO: El archivo de backup se llamará: ${FILENAME}"
 
-# Run pg_dump inside the container, compress and save
-if docker exec -u postgres "${DB_CONTAINER}" pg_dump -U "${DB_USER}" -d "${DB_NAME}" | gzip > "${BACKUP_PATH}"; then
-  echo "OK: Database backup and compression completed successfully."
+# 2. Ejecutar pg_dump dentro del contenedor, comprimir y guardar
+# El comando se ejecuta como el usuario 'postgres' del contenedor para evitar problemas de permisos.
+# La salida de pg_dump se redirige (|) a gzip para comprimirla al vuelo.
+docker exec -u postgres ${DB_CONTAINER} pg_dump -U ${DB_USER} -d ${DB_NAME} | gzip > ${FULL_PATH}
+
+# 3. Comprobar si el archivo de backup se creó correctamente
+if [ $? -eq 0 ]; then
+  echo "OK: Backup de la base de datos y compresión completados con éxito."
 else
-  echo "ERROR: pg_dump or compression failed. Aborting."
+  echo "ERROR: Falló el comando pg_dump o la compresión. Abortando."
   exit 1
 fi
 
-# Upload backup to MinIO
-echo "INFO: Uploading backup to MinIO bucket '${MINIO_BUCKET}'..."
-if mc cp "${BACKUP_PATH}" "${MINIO_ALIAS}/${MINIO_BUCKET}/"; then
-  echo "OK: Backup uploaded to MinIO successfully."
+# 4. Subir el archivo de backup a MinIO
+echo "INFO: Subiendo ${FILENAME} a MinIO bucket '${MINIO_BUCKET}'..."
+mc cp ${FULL_PATH} ${MINIO_ALIAS}/${MINIO_BUCKET}/
+
+# 5. Comprobar si la subida a MinIO fue exitosa
+if [ $? -eq 0 ]; then
+  echo "OK: El archivo se ha subido a MinIO correctamente."
 else
-  echo "ERROR: Failed to upload backup to MinIO."
+  echo "ERROR: Falló la subida a MinIO. El archivo de backup local se conservará en ${FULL_PATH} para revisión."
   exit 1
 fi
 
-# Remove only the backup file, keep the log
-echo "INFO: Removing local backup file..."
-rm -f "${BACKUP_PATH}"
-
-# Clean up old logs
-echo "INFO: Cleaning logs older than ${LOG_RETENTION_DAYS} days..."
-find "${LOG_DIR}" -type f -name "*.log" -mtime +${LOG_RETENTION_DAYS} -exec rm -f {} \;
+# 6. Limpiar el archivo de backup local
+echo "INFO: Limpiando archivo local..."
+rm ${FULL_PATH}
 
 echo "----------------------------------------"
-echo "Backup process completed successfully!"
-echo "Log saved at: ${LOG_PATH}"
+echo "¡Proceso de backup finalizado con éxito!"
 echo "----------------------------------------"
 
 exit 0
