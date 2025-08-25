@@ -73,7 +73,7 @@ services:
 
   # --- Servicio de Almacenamiento S3 ---
   minio:
-     image: minio/minio:latest
+     build: ./minio
      container_name: arandano-minio
      restart: unless-stopped
      environment:
@@ -86,7 +86,6 @@ services:
      command: server /data --console-address ":9001"
      volumes:
        - minio_data:/data
-       # AÑADE ESTE VOLUMEN PARA EL SCRIPT DE INICIALIZACIÓN
        - ./minio:/docker-entrypoint-init.d
      ports:
        # Puerto de la API de S3
@@ -117,9 +116,7 @@ services:
     restart: unless-stopped
     command: -config.file=/etc/promtail/config.yml
     volumes:
-      # Montamos el archivo de configuración
       - ./promtail/promtail-config.yml:/etc/promtail/config.yml
-      # Montamos el socket de Docker para que Promtail pueda descubrir otros contenedores
       - /var/run/docker.sock:/var/run/docker.sock
     networks:
       - arandano-net
