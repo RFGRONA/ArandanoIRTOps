@@ -71,29 +71,29 @@ services:
     networks:
       - arandano-net
 
-  # --- Servicio de Almacenamiento S3 ---
+# --- Servicio de Almacenamiento S3 ---
   minio:
-     build: ./minio
+     image: minio/minio:RELEASE.2025-07-23T15-54-02Z-cpuv1
      container_name: arandano-minio
      restart: unless-stopped
      environment:
-       # Credenciales del admin (ya las tenías)
        MINIO_ROOT_USER: ${MINIO_ROOT_USER}
        MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
-       # AÑADE LAS CREDENCIALES DE LA APP PARA EL SCRIPT
        MINIO_APP_ACCESS_KEY: ${MINIO_APP_ACCESS_KEY}
        MINIO_APP_SECRET_KEY: ${MINIO_APP_SECRET_KEY}
      command: server /data --console-address ":9001"
      volumes:
        - minio_data:/data
-       - ./minio:/docker-entrypoint-init.d
      ports:
-       # Puerto de la API de S3
        - "127.0.0.1:9000:9000"
-       # Puerto de la Consola Web de MinIO
        - "127.0.0.1:9001:9001"
      networks:
        - arandano-net
+     healthcheck:
+       test: ["CMD", "mc", "ready", "local"]
+       interval: 5s
+       timeout: 5s
+       retries: 5
 
   # --- Pila de Logging: Loki (Base de Datos) ---
   loki:
@@ -157,6 +157,24 @@ services:
       - arandano-app
       - grafana
       - minio
+
+  # --- Servicio de Configuración Inicial de MinIO ---
+  minio-setup:
+    image: minio/mc
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD}
+      - MINIO_APP_ACCESS_KEY=${MINIO_APP_ACCESS_KEY}
+      - MINIO_APP_SECRET_KEY=${MINIO_APP_SECRET_KEY}
+    depends_on:
+      minio:
+        condition: service_healthy
+    volumes:
+      - ./minio:/tmp/minio
+    entrypoint: ["/tmp/minio/setup-minio.sh"]
+    restart: on-failure
+    networks:
+      - arandano-net
 
 # Definimos la red personalizada para que todos los servicios se comuniquen
 networks:
