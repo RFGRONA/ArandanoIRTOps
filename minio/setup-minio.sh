@@ -14,6 +14,9 @@ echo "Servidor MinIO listo. Iniciando configuración..."
 # Crear el bucket para capturas RGB
 /usr/bin/mc mb localminio/rgb-captures --ignore-existing
 
+# Establecer la política del bucket a 'download' (lectura pública)
+ /usr/bin/mc anonymous set download localminio/rgb-captures
+
 # Crear el usuario para la aplicación .NET.
 /usr/bin/mc admin user add localminio "$MINIO_APP_ACCESS_KEY" "$MINIO_APP_SECRET_KEY" || echo "El usuario de la aplicación ya existe."
 
