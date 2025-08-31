@@ -8,7 +8,10 @@ done
 
 echo "Servidor MinIO listo. Iniciando configuración..."
 
-# Crear el bucket.
+# Crear el bucket para copias de seguridad de Postgres
+/usr/bin/mc mb localminio/backups --ignore-existing
+
+# Crear el bucket para capturas RGB
 /usr/bin/mc mb localminio/rgb-captures --ignore-existing
 
 # Crear el usuario para la aplicación .NET.
