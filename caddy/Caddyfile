@@ -13,5 +13,5 @@ grafana.arandanoirt.co {
 }
 
 minio.arandanoirt.co {
-    reverse_proxy minio:9001
+    reverse_proxy minio:9000
 }
